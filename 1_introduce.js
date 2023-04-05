@@ -279,6 +279,7 @@ describe("Chapter 1", ()=>{
         })
 
         it("compose function", ()=>{
+            //
             _.compose = function(){
                 let args = arguments;
                 let start = args.lenth - 1;
