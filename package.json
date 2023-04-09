@@ -4,7 +4,8 @@
   "description": "There are many project by using FOP.",
   "main": "1_introduce.js",
   "scripts": {
-    "test": "mocha 1_introduce.js"
+    "test1": "mocha 1_introduce.js",
+    "test2": "mocha 2_definition.js"
   },
   "repository": {
     "type": "git",
