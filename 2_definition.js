@@ -115,4 +115,86 @@ describe("Example 2",()=>{
         if(b = add(1, 4)) console.log(b);
         console.log(b);
     })
+
+    it("Making async function", ()=>{
+        function _async(func){
+            return function(){
+                arguments[arguments.length++] = function(result){
+                    _callback(result);
+                };
+
+                console.log(arguments);
+
+                func.apply(null, arguments);
+
+
+                var _callback;
+                function _async_cb_receiver(callback){
+                    _callback = callback
+                }
+                return _async_cb_receiver;
+            };
+        }
+
+        var add = _async(function(a, b, callback){
+            setTimeout(function(){
+                callback(a + b);
+            }, 1000);
+        });
+
+        add(20, 30)(function(r){
+            console.log("async result: ", r);
+        })
+    })
+
+    it("Making better async function", ()=>{
+        function _async(func){
+            return function(){ // 1
+                console.log(arguments);
+                arguments[arguments.length++] = function(result){ // 2
+                    _callback(result);
+                };
+                
+                (function wait(args){ // 3
+                    for(let i = 0; i < args.length; i++){
+                        if (args[i] && args[i].name == 'async_cb_receiver')
+                            return args[i](function(arg){args[i] = arg; wait(args);})
+                    }
+                    func.apply(null, args);
+                })(arguments);
+                
+                var _callback;
+                function async_cb_receiver(callback){ // 4
+                    _callback = callback
+                }
+                return async_cb_receiver;
+            }
+        }
+
+        var add = _async(function(a, b, callback){
+            setTimeout(function(){
+                callback(a + b);
+            }, 1000)
+        });
+        
+        var sub = _async(function(a, b, callback){
+            setTimeout(function(){
+                callback(a - b);
+            }, 1000)
+        });
+        
+        var div = _async(function(a, b, callback){
+            setTimeout(function(){
+                callback(a / b);
+            }, 1000)
+        });
+        
+        var log = _async(function(val){
+            setTimeout(function(){
+                console.log(val);
+            }, 1000);
+        });
+        
+        log(sub(add(10,15), add(5,7)));
+    })
 })
