@@ -5,7 +5,9 @@
   "main": "1_introduce.js",
   "scripts": {
     "test1": "mocha 1_introduce.js",
-    "test2": "mocha 2_definition.js"
+    "test2": "mocha 2_definition.js",
+    "test3": "mocha 3_underscore.js",
+    "test3_1": "node 3_1_underscore.js"
   },
   "repository": {
     "type": "git",
@@ -15,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "chai": "^4.3.7",
-    "mocha": "^10.2.0"
+    "mocha": "^10.2.0",
+    "underscore": "^1.13.6"
   }
 }
