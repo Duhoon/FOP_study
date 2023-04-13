@@ -155,7 +155,7 @@ console.log(_.keys([1, 2, 3]));
 function bloop(new_data, body){
     return function(data, iteratee){
         const result = new_data(data);
-        if( _.isArrayLike(data) ){
+        if( isArrayLike(data) ){
             for(let i = 0, len = data.length; i < len ; i++){
                 body( iteratee(data[i], i , data) );
             }
@@ -170,3 +170,18 @@ function bloop(new_data, body){
 
 _.map = bloop(_.array, _.push_to);
 _.each = bloop(_.identity, _.noop);
+
+/************************************/
+/*              Filter              */
+/************************************/
+
+_.filter = function(data, predicate){
+    const result = [];
+    _.each(data, function(val, idx, data){
+        if( predicate(val, idx, data) ) result.push(val);
+    });
+    return result;
+}
+
+console.log( _.filter([1,2,3,4,], v=> v > 1) );
+console.log( _.filter({a:1, b:2, c:3, d:4}, v => v > 1) );
