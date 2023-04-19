@@ -370,3 +370,186 @@ console.log(
         return val > 2;
     })
 )
+
+/************************************/
+/*          Modifying Bloop         */
+/************************************/
+
+function bloop(new_data, body, stopper){
+    return function(data, iter_predi){
+        const result = new_data(data);
+        let memo;
+        if( isArrayLike(data) ){
+            for( let i = 0, len = data.length; i < len; i++){
+                memo = iter_predi(data[i], i, data);
+                if(!stopper) body( memo, result, data[i], i );
+                else if (stopper(memo)) return body( memo, result, data[i], i);
+            }
+        } else {
+            for( let i = 0, keys = _.keys(data), len = keys.length; i < len; i++ ){
+                memo = iter_predi(data[keys[i]], keys[i], data);
+                if(!stopper) body(memo, result, data[keys[i]], keys[i]);
+                else if (stopper(memo)) return body( memo, result, data[keys[i]], keys[i] )
+            }
+        }
+        return result;
+    }
+}
+
+_.each = bloop( _.identity, _.noop );
+_.map = bloop( _.array, _.push_to );
+_.filter = bloop( _.array, _.if(_.identity, _.rester(_.push)) );
+_.reject = bloop( _.array, _.if(_.identity, _.noop, _.rester(_.push)) );
+
+/************************************/
+/*               Find               */
+/************************************/
+
+_.find = bloop( _.noop, function(bool, result, val){ return val;}, _.identity );
+
+console.log("\n# Find");
+console.log( _.find([1, 10, 100, 1000], v => v > 50) );
+
+_.findIndex = bloop(_.constant(-1), _.rester(_.identity, 3), _.identity);
+_.findKey = bloop(_.noop, _.rester(_.idtt, 3), _.identity);
+
+console.log("\n# Find Index");
+console.log( _.findIndex([1,10,100, 1000], v => v > 20) );
+
+console.log( _.findKey( {a: 1, c: 10, b: 100, d: 1000}, v => v > 20 ));
+
+/************************************/
+/*            Some, Every           */
+/************************************/
+
+_.not = function(v){
+    return !v;
+}
+
+function bloop(new_data, body, stopper){
+    return function(data, iter_predi){
+        iter_predi = iter_predi || _.identity;
+        const result = new_data(data);
+        let memo;
+        if( isArrayLike(data) ){
+            for(let i = 0, len = data.length; i < len; i++){
+                memo = iter_predi(data[i], i, data);
+                if( !stopper ) body( memo, result, data[i], i);
+                else if( stopper(memo) ) return body( memo, result, data[i], i)
+            }
+        } else {
+            for(let i = 0, keys = _.keys(data), len = keys.length; i < len ; i++){
+                memo = iter_predi(data[keys[i]], keys[i], data);
+                if( !stopper ) body( memo, result, data[keys[i]], keys[i] )
+                else if( stopper(memo) ) return body( memo, result, data[keys[i]], keys[i] );
+            }
+        }
+        return result;
+    }
+}
+
+_.some = bloop(_.constant(false), _.constant(true), _.identity);
+_.every = bloop(_.constant(true), _.constant(false), _.not);
+
+console.log("\n # Some")
+console.log( _.some([false, true, 0, NaN]) );
+console.log( _.some([false, undefined, 0]) );
+
+console.log("\n # Every")
+console.log( _.every([false, true, 0, NaN]) );
+console.log( _.every([1, 2, 3, 4]) );
+
+/************************************/
+/*              Reduce              */
+/************************************/
+
+function bloop(new_data, body, stopper, is_reduce){
+    return function(data, iter_predi, opt1){
+        iter_predi = iter_predi || _.identity;
+        const result = new_data(data);
+        let memo = is_reduce ? opt1 : undefined;
+
+        if( isArrayLike(data) ){
+            for(let i = 0, len = data.length; i < len ; i++){
+                memo = is_reduce ? 
+                    iter_predi(memo, data[i], i, data ) :
+                    iter_predi(data[i], i ,data);
+                if( !stopper ) body(memo, result, data[i], i);
+                else if( stopper(memo) ) return body(memo, result, data[i], i);
+            }
+        } else {
+            for(let i = 0, keys = _.keys(data), len = keys.length; i < len ; i++){
+                memo = is_reduce ?
+                    iter_predi(memo, data[keys[i]], keys[i], data) :
+                    iter_predi(data[keys[i]], keys[i], data);
+                if(!stopper) body(memo, result, data[keys[i]], keys[i]);
+                else if(stopper(memo)) body(memo, result, data[keys[i]], keys[i]);
+            }
+        }
+        return is_reduce? memo : result;
+    }
+}
+
+_.reduce = bloop(_.noop, _.noop, undefined, true);
+
+console.log("\n # Reduce");
+console.log( _.reduce([1, 2, 3], (m,v) => m+v, 0) );
+
+/************************************/
+/*         Refactoring Bloop        */
+/************************************/
+
+function bloop(new_data, body, stopper, is_reduce){
+    return function(data, iter_predi, opt1){
+        iter_predi = iter_predi || _.identity;
+        const result = new_data(data);
+        let memo = is_reduce ? opt1 : undefined;
+        let keys = isArrayLike(data) ? null : _.keys(data);
+        for(let i = 0, len = (keys || data).length; i < len; i++ ){
+            let key = keys? keys[i] : i;
+            memo = is_reduce ? 
+                iter_predi(memo, data[key], key, data):
+                iter_predi(data[key], key, data);
+            if(!stopper) body(memo, result, data[key], key);
+            else if(stopper(memo)) return body(memo, result, data[key], key);
+        }
+        return is_reduce ? memo : result;
+    }
+}
+
+function bloop(new_data, body, stopper , is_reduce){
+    return function(data, iter_predi, opt1){
+        iter_predi = iter_predi || _.identity;
+        const result = new_data(data);
+        let memo = is_reduce ? opt1 : undefined;
+        var limiter = is_reduce ? undefined : opt1;
+        var keys = isArrayLike(data) ? null : _.keys(data);
+        
+        if(is_reduce){
+            for( var i = 0, len = (keys || data).length ; i < len ; i++ ){
+                let key = keys ? keys[i] : i ;
+                memo = iter_predi(data[key], key, data);
+            }
+            return memo;
+        }
+        if(stopper){
+            for (var i = 0, len = (keys || data).length ; i < len ; i++){
+                let key = keys ? keys[i] : i ;
+                let memo = iter_predi(data[key], key, data);
+                if(stopper(memo)) return body(memo, result, data[key], key);
+            }
+        } else if(limiter){
+            for( var i = 0, len = (keys || data).length ; i < len ; i++ ){
+                let key = keys ? keys[i] : i ;
+                body(iter_predi(data[key], key, data), result, data[key]);
+                if( limiter == result.length ) break;
+            }
+        } else {
+            for( var i = 0, len = (keys || data).length ; i < len ; i++){
+                let key = keys ? keys[i] : i ;
+                body(iter_predi(data[key], key, data), result, data[key]);
+            }
+        }
+        return result;
+    }
+}
