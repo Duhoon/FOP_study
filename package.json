@@ -7,7 +7,8 @@
     "test1": "mocha 1_introduce.js",
     "test2": "mocha 2_definition.js",
     "test3": "mocha 3_underscore.js",
-    "test3_1": "node 3_1_underscore.js"
+    "test3_1": "node 3_1_underscore.js",
+    "test4": "node 4_assemble.js"
   },
   "repository": {
     "type": "git",
